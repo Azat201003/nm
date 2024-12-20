@@ -38,6 +38,11 @@ class AddCommand(Command):
     def __call__(self, content, *args):
         print(f"Task added successfully (ID: {self.handler.add_note(content)})")
 
+class RemoveCommand(Command):
+    title = 'del'
+    def __call__(self, id, *args):
+        self.handler.remove_note(int(id))
+
 class UpdateCommand(Command):
     title = 'update'
     def __call__(self, id, content, *args):
@@ -71,6 +76,20 @@ class Handler:
             json.dump(self.data, file)
         
         return id
+
+    def get_index_by_id(self, id:int):
+        for note in self.data:
+            if note['id'] == id:
+                return self.data.index(note)
+
+    def remove_note(self, id:int):
+        index = self.get_index_by_id(id)
+        if index is None:
+            return print("note is not found")
+        self.data.pop(index)
+
+        with open('data.json', 'w') as file:
+            json.dump(self.data, file)
     
     def change_note(self, id, content):
         self.data[id]['content'] = content
@@ -93,13 +112,7 @@ class Handler:
 class Invoker:
     def __init__(self):
         self.handler = Handler()
-        self.commands = [
-            ListCommand(self.handler),
-            AddCommand(self.handler),
-            UpdateCommand(self.handler),
-            MarkDone(self.handler),
-            MarkInProgress(self.handler),
-        ]
+        self.commands = map(lambda command: command(self.handler), Command.__subclasses__())
         self.commands_by_name = {}
         for command in self.commands:
             self.commands_by_name[command.title] = command
@@ -124,15 +137,3 @@ if len(inp) > 1:
     invoker(command, *args)
 else:
     invoker(command)
-
-
-
-'''
-        print(args)
-структура json'а:
-
-[
-    {id: 0, content: 'afsdafdsdfas', status: 'done', createdAt: 01.02.2024, updatedAt: 02.02.2024}
-]
-
-'''
